@@ -1,36 +1,35 @@
 import requests
+from datetime import datetime
 
 # رابط الـ npoint تبعك
 NPOINT_URL = "https://api.npoint.io/6efc24dd557a89d1ee2d"
 
-def fetch_and_update():
-    # كود تجريبي للتأكد من الاتصال، رح نحدثه ليسحب من موقع حقيقي بالخطوة الجاية
-    data = {
-        "date": "مباريات محدثة تلقائياً",
-        "leagues": [
-            {
-                "name": "الدوري الإسباني",
-                "matches": [
-                    {
-                        "h_name": "ريال مدريد",
-                        "h_logo": "https://ssl.gstatic.com/onebox/media/sports/logos/Th4fM9Z9yMreHlsE6q_atA_96x96.png",
-                        "a_name": "برشلونة",
-                        "a_logo": "https://ssl.gstatic.com/onebox/media/sports/logos/96x96/fcb.png",
-                        "time": "22:00",
-                        "status": "قريباً",
-                        "is_live": False,
-                        "link": "player.html"
-                    }
-                ]
-            }
-        ]
-    }
+def fetch_live_matches():
+    # سحب بيانات حقيقية ومحدثة من المصدر
+    API_SOURCE = "https://raw.githubusercontent.com/saif-js/matches-api/main/data.json"
     
-    response = requests.post(NPOINT_URL, json=data)
-    if response.status_code == 200:
-        print("تم التحديث التلقائي بنجاح!")
+    try:
+        response = requests.get(API_SOURCE)
+        if response.status_code == 200:
+            data = response.json()
+            # تاريخ اليوم عشان يظهر بالتطبيق
+            data["date"] = "مباريات " + datetime.now().strftime("%A - %d %B")
+            return data
+    except:
+        return None
+
+def update_varo_app():
+    print("جاري سحب مباريات اليوم الحقيقية...")
+    live_data = fetch_live_matches()
+    
+    if live_data:
+        res = requests.post(NPOINT_URL, json=live_data)
+        if res.status_code == 200:
+            print("تم تحديث تطبيق VARO LIVE بنجاح! ✅")
+        else:
+            print("مشكلة في الإرسال لـ npoint")
     else:
-        print("فشل التحديث، تأكد من الرابط")
+        print("مشكلة في سحب البيانات من المصدر")
 
 if __name__ == "__main__":
-    fetch_and_update()
+    update_varo_app()
