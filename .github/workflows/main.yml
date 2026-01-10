@@ -1,0 +1,19 @@
+name: Varo Auto Update
+on:
+  schedule:
+    - cron: '0 8 * * *' # بشتغل 8 الصبح كل يوم
+  workflow_dispatch: # زر عشان تشغله يدوي بأي وقت
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install requests
+        run: pip install requests
+      - name: Run Scraper
+        run: python scraper.py
