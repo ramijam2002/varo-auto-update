@@ -1,54 +1,56 @@
 import requests
 from bs4 import BeautifulSoup
 
-# الرابط تبعك
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
-# الدوريات اللي إنت مهتم فيها (الفلتر)
-TARGET_LEAGUES = [
-    "الدوري الإنجليزي", "الدوري الإسباني", "الدوري الإيطالي", 
-    "الدوري الألماني", "الدوري الفرنسي", "دوري أبطال أوروبا", 
-    "الدوري السعودي", "كأس السوبر الإسباني"
-]
+# الدوريات اللي بدنا إياها
+TARGET_LEAGUES = ["الدوري الإنجليزي", "الدوري الإسباني", "الدوري الإيطالي", "الدوري الألماني", "الدوري الفرنسي", "الدوري السعودي", "أبطال"]
 
 def scrape_jdwel():
     url = "https://jdwel.com/today/"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, "html.parser")
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     
-    data = {"date": "مباريات اليوم المختارة", "leagues": []}
-    
-    # البحث عن حاويات الدوريات في موقع جدول
-    leagues_sections = soup.select(".league-block") # هذا تخمين للمسار، سنعدله حسب هيكلة الموقع
-    
-    for section in soup.find_all('div', class_='league-matches-container'):
-        league_name = section.find('h2').text.strip()
+    try:
+        response = requests.get(url, headers=headers, timeout=20)
+        soup = BeautifulSoup(response.content, "html.parser")
         
-        # تطبيق الفلتر تبعك
-        if any(target in league_name for target in TARGET_LEAGUES):
-            current_league = {"name": league_name, "matches": []}
+        data = {"date": "مباريات اليوم المختارة", "leagues": []}
+        
+        # البحث عن كل قسم دوري
+        sections = soup.find_all('div', class_='league-matches-container')
+        
+        for section in sections:
+            league_title = section.find('h2').text.strip() if section.find('h2') else "دوري غير معروف"
             
-            for match in section.find_all('div', class_='match-card'):
-                try:
-                    m = {
-                        "time": match.find('div', class_='match-time').text.strip(),
-                        "team1": match.find('div', class_='team-home').find('span').text.strip(),
-                        "team2": match.find('div', class_='team-away').find('span').text.strip(),
-                        "logo1": match.find('div', class_='team-home').find('img')['src'],
-                        "logo2": match.find('div', class_='team-away').find('img')['src'],
-                        "link": "https://jdwel.com" + match.find('a')['href']
-                    }
-                    current_league["matches"].append(m)
-                except:
-                    continue
-            
-            if current_league["matches"]:
-                data["leagues"].append(current_league)
+            # فلترة الدوريات
+            if any(target in league_title for target in TARGET_LEAGUES):
+                league_data = {"name": league_title, "matches": []}
                 
-    # إرسال البيانات
-    requests.post(NPOINT_URL, json=data)
-    print("تم سحب أهم المباريات بنجاح! ✅")
+                matches = section.find_all('div', class_='match-card')
+                for match in matches:
+                    try:
+                        time = match.find('div', class_='match-time').text.strip() if match.find('div', class_='match-time') else "--:--"
+                        t1 = match.find('div', class_='team-home').text.strip()
+                        t2 = match.find('div', class_='team-away').text.strip()
+                        # سحب الشعارات
+                        img1 = match.find('div', class_='team-home').find('img')['src'] if match.find('div', class_='team-home').find('img') else ""
+                        img2 = match.find('div', class_='team-away').find('img')['src'] if match.find('div', class_='team-away').find('img') else ""
+                        
+                        league_data["matches"].append({
+                            "time": time, "team1": t1, "team2": t2,
+                            "logo1": img1, "logo2": img2, "link": "#"
+                        })
+                    except: continue
+                
+                if league_data["matches"]:
+                    data["leagues"].append(league_data)
+        
+        # إرسال البيانات حتى لو كانت فاضية عشان نتأكد إن السيرفر شغال
+        requests.post(NPOINT_URL, json=data)
+        print("تم التحديث بنجاح ✅")
+        
+    except Exception as e:
+        print(f"حدث خطأ: {e}")
 
 if __name__ == "__main__":
     scrape_jdwel()
