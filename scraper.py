@@ -1,36 +1,35 @@
 import requests
-from datetime import datetime
 
-# رابط الـ npoint تبعك
+# الرابط اللي بالصورة تبعتك بالظبط
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
-def fetch_premium_matches():
-    # مصدر بيانات محدث بشعارات عالية الجودة
-    API_URL = "https://raw.githubusercontent.com/saif-js/matches-api/main/data.json"
+def force_update():
+    # بيانات تجريبية سريعة عشان نتأكد إنه اشتغل
+    data = {
+        "date": "تم التحديث بنجاح ✅",
+        "leagues": [
+            {
+                "name": "الدوري الإنجليزي",
+                "matches": [
+                    {
+                        "time": "18:00",
+                        "team1": "ليفربول",
+                        "team2": "مانشستر سيتي",
+                        "logo1": "https://ssl.gstatic.com/onebox/media/sports/logos/0iTh9rq34dW9pzzS87D9oQ_48x48.png",
+                        "logo2": "https://ssl.gstatic.com/onebox/media/sports/logos/z44lWGywnAsclwi9Wqz97A_48x48.png",
+                        "link": "#"
+                    }
+                ]
+            }
+        ]
+    }
     
-    try:
-        response = requests.get(API_URL)
-        if response.status_code == 200:
-            data = response.json()
-            # تحديث تاريخ اليوم الأحد
-            data["date"] = "مباريات الأحد - " + datetime.now().strftime("%d %B")
-            return data
-    except:
-        return None
-
-def update_varo_app():
-    print("جاري سحب المباريات بشعارات عالية الجودة...")
-    data = fetch_premium_matches()
-    
-    if data:
-        # إرسال البيانات للرابط تبعك
-        res = requests.post(NPOINT_URL, json=data)
-        if res.status_code == 200:
-            print("تم التحديث بنجاح والشعارات الآن زابطة! ✅")
-        else:
-            print("في مشكلة بالرابط")
+    print("جاري الإرسال للرابط...")
+    res = requests.post(NPOINT_URL, json=data)
+    if res.status_code == 200:
+        print("مبروك! البيانات وصلت الرابط ✅")
     else:
-        print("المصدر مش راضي يجاوب")
+        print(f"خطأ في الإرسال: {res.status_code}")
 
 if __name__ == "__main__":
-    update_varo_app()
+    force_update()
