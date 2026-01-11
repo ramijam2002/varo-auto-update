@@ -26,7 +26,7 @@ def update_varo_matches():
                     {
                         "time": "22:00",
                         "team1": "ريال مدريد",
-                        "team2": "برشلونة",
+                        "team2": "Varo",
                         "logo1": "https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/800px-Real_Madrid_CF.svg.png",
                         "logo2": "https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_logo.svg/800px-FC_Barcelona_logo.svg.png",
                         "link": "https://example.com/live2"
