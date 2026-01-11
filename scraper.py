@@ -4,53 +4,55 @@ from bs4 import BeautifulSoup
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
 def get_matches():
-    # الموقع الثاني بالقائمة
-    url = "https://www.livesoccerhd.info/"
+    # الموقع الرابع بالقائمة
+    url = "https://www.koorayou.com/"
+    
+    # هاد هو الـ Header اللي رح يحل المشكلة
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.7,en;q=0.3",
+        "Referer": "https://www.google.com/"
     }
     
     try:
+        # بنضيف الـ headers هون عشان الطلب ينجح
         response = requests.get(url, headers=headers, timeout=20)
         soup = BeautifulSoup(response.content, "html.parser")
         
-        data = {"date": "مباريات اليوم - LiveSoccerHD", "leagues": []}
+        data = {"date": "مباريات اليوم - Koorayou", "leagues": []}
         matches_list = []
         
-        # البحث عن المباريات في الموقع الثاني
-        # ملاحظة: سنبحث عن العناصر الشائعة في مواقع يلا شوت
-        match_boxes = soup.find_all('div', class_='match-event') or soup.find_all('a', class_='match-card')
+        # البحث عن الكلاسات في Koorayou
+        match_divs = soup.find_all('div', class_='match-container') or soup.find_all('div', class_='match-card')
         
-        for box in match_boxes:
+        for div in match_divs:
             try:
-                # محاولة سحب الأسماء
-                teams = box.find_all('div', class_='team-name')
-                if len(teams) >= 2:
-                    t1 = teams[0].text.strip()
-                    t2 = teams[1].text.strip()
-                    m_time = box.find('div', class_='match-time').text.strip()
-                    
-                    matches_list.append({
-                        "time": m_time,
-                        "team1": t1,
-                        "team2": t2,
-                        # اعتمدنا شعارات SofaScore الفخمة
-                        "logo1": f"https://api.sofascore.app/api/v1/team/search/{t1}/image", 
-                        "logo2": f"https://api.sofascore.app/api/v1/team/search/{t2}/image",
-                        "link": "#"
-                    })
+                # سحب أسماء الفرق
+                t1 = div.find('div', class_='team-home').text.strip()
+                t2 = div.find('div', class_='team-away').text.strip()
+                m_time = div.find('div', class_='match-time').text.strip()
+                
+                matches_list.append({
+                    "time": m_time,
+                    "team1": t1, "team2": t2,
+                    # بنسحب الشعارات من SofaScore زي ما اتفقنا
+                    "logo1": f"https://api.sofascore.app/api/v1/team/search/{t1}/image",
+                    "logo2": f"https://api.sofascore.app/api/v1/team/search/{t2}/image",
+                    "link": "#"
+                })
             except: continue
             
         if matches_list:
-            data["leagues"].append({"name": "أهم المباريات", "matches": matches_list})
+            data["leagues"].append({"name": "أهم المباريات الآن", "matches": matches_list})
         
-        # إرسال البيانات
+        # إرسال البيانات لـ npoint
         res = requests.post(NPOINT_URL, json=data)
         if res.status_code == 200:
-            print("تم التحديث من الموقع الثاني بنجاح! ✅")
-        
+            print("تم التحديث بالـ Headers بنجاح! ✅")
+            
     except Exception as e:
-        print(f"خطأ في الموقع الثاني: {e}")
+        print(f"حدث خطأ: {e}")
 
 if __name__ == "__main__":
     get_matches()
