@@ -3,19 +3,25 @@ from datetime import datetime
 
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
-# فلتر الدوريات (أضفت لك معرفات الأرقام عشان نضمن السحب)
-TARGET_LEAGUES = ["الأردن", "إنجلترا", "إسبانيا", "السعودية", "ألمانيا", "إيطاليا", "فرنسا", "أبطال"]
+# فلتر الدوريات (كلمات مفتاحية)
+TARGET_KEYWORDS = ["الأردن", "إسبانيا", "إنجلترا", "السعودية", "إيطاليا", "ألمانيا", "فرنسا", "أبطال"]
 
 def get_matches():
-    # التاريخ الحالي بشكل تلقائي
+    # تاريخ اليوم 2026-01-11
     today = datetime.now().strftime('%Y-%m-%d')
     url = f"https://api.sofascore.com/api/v1/sport/football/scheduled-events/{today}"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    
+    # رأسية الطلب (Headers) لمحاكاة متصفح حقيقي عشان نتخطى الحماية
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Origin": "https://www.sofascore.com",
+        "Referer": "https://www.sofascore.com/"
+    }
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=15)
         if response.status_code != 200:
-            print("سيرفر SofaScore ما رد علينا")
+            print(f"فشل الطلب، الكود: {response.status_code}")
             return
 
         events = response.json().get('events', [])
@@ -23,35 +29,40 @@ def get_matches():
         temp_leagues = {}
 
         for event in events:
-            # سحب اسم الدوري واسم الدولة
-            league_name = event.get('tournament', {}).get('name', '')
-            country_name = event.get('tournament', {}).get('category', {}).get('name', '')
+            # التحقق من اسم الدولة أو الدوري
+            category = event.get('tournament', {}).get('category', {}).get('name', '')
+            tournament = event.get('tournament', {}).get('name', '')
             
-            # إذا الدوري أو الدولة ضمن قائمتنا
-            if any(target in league_name or target in country_name for target in TARGET_LEAGUES):
-                full_name = f"{country_name} - {league_name}"
-                if full_name not in temp_leagues:
-                    temp_leagues[full_name] = []
+            # إذا كان الدوري من اللي بدنا إياهم
+            if any(k in category or k in tournament for k in TARGET_KEYWORDS):
+                league_key = f"{category} - {tournament}"
+                if league_key not in temp_leagues:
+                    temp_leagues[league_key] = []
                 
-                match_info = {
-                    "time": datetime.fromtimestamp(event['startTimestamp']).strftime('%H:%M'),
-                    "team1": event.get('homeTeam', {}).get('nameAr', event['homeTeam']['name']),
-                    "team2": event.get('awayTeam', {}).get('nameAr', event['awayTeam']['name']),
+                # توقيت المباراة
+                match_time = datetime.fromtimestamp(event['startTimestamp']).strftime('%H:%M')
+                
+                temp_leagues[league_key].append({
+                    "time": match_time,
+                    "team1": event['homeTeam'].get('nameAr', event['homeTeam']['name']),
+                    "team2": event['awayTeam'].get('nameAr', event['awayTeam']['name']),
                     "logo1": f"https://api.sofascore.app/api/v1/team/{event['homeTeam']['id']}/image",
                     "logo2": f"https://api.sofascore.app/api/v1/team/{event['awayTeam']['id']}/image",
                     "link": "#"
-                }
-                temp_leagues[full_name].append(match_info)
+                })
 
         for name, matches in temp_leagues.items():
             data["leagues"].append({"name": name, "matches": matches})
 
-        # إرسال البيانات (حتى لو فاضية رح نحدث التاريخ عشان نعرف إنه شغال)
-        requests.post(NPOINT_URL, json=data)
-        print(f"تم تحديث {len(data['leagues'])} دوريات ✅")
+        # إرسال البيانات النهائية
+        res = requests.post(NPOINT_URL, json=data)
+        if res.status_code == 200:
+            print(f"مبروك! تم سحب {len(data['leagues'])} دوري بنجاح ✅")
+        else:
+            print("فشل إرسال البيانات لـ npoint")
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"حدث خطأ: {e}")
 
 if __name__ == "__main__":
     get_matches()
