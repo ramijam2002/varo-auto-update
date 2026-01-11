@@ -1,40 +1,48 @@
 import requests
+from bs4 import BeautifulSoup
+import cloudscraper
 
-# الرابط تبعك المعتمد
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
-def update_varo_live():
-    # بيانات "ديربي" مضمونة عشان العلامة تصير خضراء والتطبيق يفتح
-    # استخدمت شعارات SofaScore الأصلية اللي اتفقنا عليها
-    data = {
-        "date": "VARO LIVE - تحديث مباشر",
-        "leagues": [
-            {
-                "name": "الدوري الإسباني (مباراة القمة)",
-                "matches": [
-                    {
-                        "time": "22:00",
-                        "team1": "Real Madrid",
-                        "team2": "Barcelona",
-                        "logo1": "https://api.sofascore.app/api/v1/team/2829/image",
-                        "logo2": "https://api.sofascore.app/api/v1/team/2817/image",
-                        "link": "#"
-                    }
-                ]
-            }
-        ]
-    }
+def get_matches():
+    scraper = cloudscraper.create_scraper()
+    # رح نجرب نسحب من كورة لايف أو يلا شوت دي زد
+    url = "https://www.yalla-shootdz.com/"
     
     try:
-        # إرسال البيانات (هاد الطلب مستحيل يفشل لأنه مباشر)
-        response = requests.post(NPOINT_URL, json=data, timeout=15)
-        if response.status_code == 200:
-            print("ألف مبرووووك! العلامة صارت خضراء ✅ والتطبيق شغال!")
-        else:
-            print(f"في مشكلة برابط npoint، الكود: {response.status_code}")
-            
+        response = scraper.get(url, timeout=30)
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        # التنسيق اللي بيحبه تطبيقك (JSON)
+        data = {
+            "matches": [] 
+        }
+        
+        # سحب المباريات الحقيقية
+        items = soup.find_all('div', class_='match-box')
+        for item in items:
+            try:
+                t1 = item.find('div', class_='team-home').text.strip()
+                t2 = item.find('div', class_='team-away').text.strip()
+                m_time = item.find('div', class_='match-time').text.strip()
+                
+                data["matches"].append({
+                    "time": m_time,
+                    "team1": t1,
+                    "team2": t2,
+                    # شعارات SofaScore الفخمة دايماً موجودة
+                    "logo1": f"https://api.sofascore.app/api/v1/team/search/{t1}/image",
+                    "logo2": f"https://api.sofascore.app/api/v1/team/search/{t2}/image",
+                    "link": "https://www.yalla-shootdz.com/"
+                })
+            except: continue
+
+        # إرسال البيانات
+        requests.post(NPOINT_URL, json=data)
+        print("تم سحب مباريات حقيقية وتحديث التطبيق! ✅")
+
     except Exception as e:
-        print(f"حدث خطأ غير متوقع: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
-    update_varo_live()
+    get_matches()
