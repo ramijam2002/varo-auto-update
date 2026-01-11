@@ -1,48 +1,85 @@
 import requests
-from bs4 import BeautifulSoup
-import cloudscraper
 
 NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
-def get_matches():
-    scraper = cloudscraper.create_scraper()
-    # رح نجرب نسحب من كورة لايف أو يلا شوت دي زد
-    url = "https://www.yalla-shootdz.com/"
+def update_varo_matches():
+    # البيانات مستخرجة بدقة من صورة "رادار كورة" بتاريخ 11 يناير
+    data = {
+        "date": "مباريات اليوم - الأحد 11 يناير 2026",
+        "leagues": [
+            {
+                "name": "الدوري الإسباني - الجولة 19",
+                "matches": [
+                    {
+                        "time": "22:00",
+                        "team1": "Real Madrid", "team2": "Barcelona",
+                        "logo1": "https://api.sofascore.app/api/v1/team/2829/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/2817/image"
+                    },
+                    {
+                        "time": "04:00",
+                        "team1": "Rayo Vallecano", "team2": "Mallorca",
+                        "logo1": "https://api.sofascore.app/api/v1/team/2818/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/2825/image"
+                    }
+                ]
+            },
+            {
+                "name": "الدوري الإيطالي - الجولة 20",
+                "matches": [
+                    {
+                        "time": "10:45",
+                        "team1": "Napoli", "team2": "Inter",
+                        "logo1": "https://api.sofascore.app/api/v1/team/2714/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/2697/image"
+                    },
+                    {
+                        "time": "05:00",
+                        "team1": "Milan", "team2": "Fiorentina",
+                        "logo1": "https://api.sofascore.app/api/v1/team/2692/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/2693/image"
+                    }
+                ]
+            },
+            {
+                "name": "الدوري الألماني - الجولة 16",
+                "matches": [
+                    {
+                        "time": "07:30",
+                        "team1": "Bayern Munich", "team2": "Wolfsburg",
+                        "logo1": "https://api.sofascore.app/api/v1/team/2672/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/2685/image"
+                    }
+                ]
+            },
+            {
+                "name": "كأس الاتحاد الإنجليزي - الدور الثالث",
+                "matches": [
+                    {
+                        "time": "07:30",
+                        "team1": "Manchester United", "team2": "Brighton",
+                        "logo1": "https://api.sofascore.app/api/v1/team/35/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/30/image"
+                    },
+                    {
+                        "time": "05:00",
+                        "team1": "Arsenal", "team2": "Portsmouth",
+                        "logo1": "https://api.sofascore.app/api/v1/team/42/image",
+                        "logo2": "https://api.sofascore.app/api/v1/team/41/image"
+                    }
+                ]
+            }
+        ]
+    }
     
     try:
-        response = scraper.get(url, timeout=30)
-        soup = BeautifulSoup(response.content, "html.parser")
-        
-        # التنسيق اللي بيحبه تطبيقك (JSON)
-        data = {
-            "matches": [] 
-        }
-        
-        # سحب المباريات الحقيقية
-        items = soup.find_all('div', class_='match-box')
-        for item in items:
-            try:
-                t1 = item.find('div', class_='team-home').text.strip()
-                t2 = item.find('div', class_='team-away').text.strip()
-                m_time = item.find('div', class_='match-time').text.strip()
-                
-                data["matches"].append({
-                    "time": m_time,
-                    "team1": t1,
-                    "team2": t2,
-                    # شعارات SofaScore الفخمة دايماً موجودة
-                    "logo1": f"https://api.sofascore.app/api/v1/team/search/{t1}/image",
-                    "logo2": f"https://api.sofascore.app/api/v1/team/search/{t2}/image",
-                    "link": "https://www.yalla-shootdz.com/"
-                })
-            except: continue
-
-        # إرسال البيانات
-        requests.post(NPOINT_URL, json=data)
-        print("تم سحب مباريات حقيقية وتحديث التطبيق! ✅")
-
+        response = requests.post(NPOINT_URL, json=data, timeout=15)
+        if response.status_code == 200:
+            print("تم تحديث جدول المباريات من الصورة بنجاح! ✅")
+        else:
+            print(f"فشل التحديث، كود الخطأ: {response.status_code}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"خطأ: {e}")
 
 if __name__ == "__main__":
-    get_matches()
+    update_varo_matches()
