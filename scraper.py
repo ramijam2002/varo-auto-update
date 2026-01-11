@@ -2,7 +2,7 @@ import requests
 from datetime import datetime
 
 # رابط الـ npoint تبعك
-NPOINT_URL = "https://api.npoint.io/6efc24dd557a89d1ee2d"
+NPOINT_URL = "https://api.npoint.io/7c350afaa6af728cc142"
 
 def fetch_premium_matches():
     # مصدر بيانات محدث بشعارات عالية الجودة
